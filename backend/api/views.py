@@ -30,8 +30,13 @@ from .serializers import *
 from . import status_http
 from .models import *
 
-#
-
+#qr-login
+from PIL import Image
+from pyzbar.pyzbar import decode
+import base64
+import asyncio
+import websockets
+import json
 
 def create_url_signature(url, secret_key):
     url_with_secret = url + secret_key
@@ -434,3 +439,81 @@ class GoogleView(APIView):
         response['access'] = str(token.access_token)
         response['refresh'] = str(token)
         return Response(response)
+    
+
+@api_view(['POST'])  
+def read_qrcode_and_send_username(request):
+        try:
+
+            # Nhận dữ liệu hình ảnh từ yêu cầu POST
+            if 'image' not in request.FILES:
+                return Response({'error': 'No image file provided'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            image_file = request.FILES['image']
+            image = Image.open(image_file)
+
+            # key = request.POST['key']
+
+            # Giải mã QR code
+            decoded_objects = decode(image)
+            if not decoded_objects:
+                return Response({'error': 'No QR code found'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Trả về dữ liệu QR code
+            qr_data = decoded_objects[0].data.decode('utf-8')
+            print('qr-code-data: ', qr_data)
+            username = request.POST['username']
+            # print('acb222: ', access_token)
+            async def send_qr_data():
+                async with websockets.connect("ws://localhost:8000/ws/qr_code/" + qr_data + "/") as websocket:
+                    
+                    await websocket.send(json.dumps({
+                        'qr_data': qr_data,
+                        'username': username,
+                        'status': 'success'
+                    }))
+                    response = await websocket.recv()
+                    response_data = json.loads(response)
+
+                    return response_data
+                
+            # Chạy hàm async trong môi trường đồng bộ
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            response_data = loop.run_until_complete(send_qr_data())
+
+            
+
+            return Response([{'message': 'QR data sent successfully', 'qr-data: ': f"{qr_data},{username}", 'response_data': response_data}], status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)    
+@api_view(['POST'])   
+def alow_login(request):
+        try:           
+            qr_data = request.POST['qr_data']
+            accessToken = request.POST['accessToken']
+            async def send_qr_data():
+                async with websockets.connect("ws://localhost:8000/ws/qr_code/" + qr_data + "/") as websocket:
+                    
+                    await websocket.send(json.dumps({
+                        'qr_data': qr_data,
+                        'accessToken': accessToken,
+                        'status': 'alow_login'
+                    }))
+                    response = await websocket.recv()
+                    response_data = json.loads(response)
+
+                    return response_data
+                
+            # Chạy hàm async trong môi trường đồng bộ
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            response_data = loop.run_until_complete(send_qr_data())
+
+            
+
+            return Response([{'message': 'QR data sent successfully', 'qr-data: ': f"{qr_data},{accessToken}", 'response_data': response_data}], status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 

@@ -28,5 +28,12 @@ urlpatterns = [
     path('auth/google/', GoogleView.as_view(), name='google'),
     path('auth/login/', MyTokenObtainPairView.as_view()),
     # #
-    path('system/', include('api.system.urls'))
+    path('system/', include('api.system.urls')),
+
+    #get token
+    path('token/', MyTokenObtainPairView.as_view(), name='MyTokenView'),
+
+    # qr-login
+    path('read_qrcode_and_send_username/', read_qrcode_and_send_username, name='read_qrcode_and_send_username'),
+    path('alow_login/', alow_login, name='alow_login'),
 ]

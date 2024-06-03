@@ -53,6 +53,7 @@ Thumbs.db
 *.wmv
 
 #==========================
+venv
 /backend_env
 backend/.env
 backend/static

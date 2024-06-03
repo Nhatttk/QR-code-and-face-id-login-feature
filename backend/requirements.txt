@@ -21,3 +21,7 @@ djangorestframework-api-key
 boto3
 django-storages
 cryptography
+
+#add-nhat
+channels[daphne]
+pyzbar
