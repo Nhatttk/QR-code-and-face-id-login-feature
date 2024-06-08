@@ -5,6 +5,9 @@ admin.site.register(Profile)
 admin.site.register(HistoryLog)
 admin.site.register(ImageLibrary)
 admin.site.register(DocumentLibrary)
+admin.site.register(User_face_id)
+
+
 #
 admin.site.register(ImageLibraryProtected)
 

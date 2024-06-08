@@ -54,6 +54,7 @@ Thumbs.db
 
 #==========================
 venv
+venv38
 /backend_env
 backend/.env
 backend/static

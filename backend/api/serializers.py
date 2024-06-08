@@ -19,10 +19,10 @@ from user_agents import parse
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.hashers import make_password
 from datetime import timedelta, datetime
-
+import face_recognition
 from api.models import *
 # from api.submodels.models_student import StudentMe
-
+import base64
 
 def getOriginalRefreshToken(refresh_token):
     try:
@@ -695,116 +695,44 @@ class MySimpleJWTSerializer(TokenObtainPairSerializer):
                     ip_address=MySimpleJWTSerializer.my_ip_address,
                     mac_address=mac_address,
                 )
-                # print("===Exp end")
-        #
-        # try:
-        #     user_agent = MySimpleJWTSerializer.myRequest.user_agent
-        #     browser_name = user_agent.browser.family
-        #     is_pc = user_agent.is_pc
-        #     is_mobile = user_agent.is_mobile
-        #     is_tablet = user_agent.is_tablet
-        #     device = ""
-        #     if is_pc == True:
-        #         device = "PC"
-        #     elif is_mobile == True:
-        #         device = "Mobile"
-        #     elif is_tablet == True:
-        #         device = "Tablet"
-        #     HistoryLog.objects.create(user=user, hostname=hostname, ip_address=MySimpleJWTSerializer.my_ip_address,
-        #                               mac_address=mac_address, browser=browser_name, device=device)
-        # except Exception as err:
-        #     print("HistoryLog: ", str(err))
-        #     pass
+ 
         return token
-
-    # def validate(self, attrs):
-    #     credentials = {"username": "", "password": attrs.get("password")}
-    #     # print("school_domain: ", attrs)
-    #     #
-    #     school_domain = ""
-    #     email = ""
-    #     username = attrs.get("username").strip()
-    #     username_temp = username
-    #     username_temp = username_temp.split(":google:email:")
-    #     if len(username_temp) > 1:
-    #         email = username_temp[0]
-    #         school_domain = username_temp[1]
-    #         checkSchoolValid = StudentMe.objects.filter(
-    #             email=email, domain_school=school_domain
-    #         ).count()
-    #         # print("checkSchoolValid: ", email)
-    #         if checkSchoolValid == 0:
-    #             return super().validate(credentials)
-    #     else:
-    #         email = username
-    #     #
-    #     # user_obj = User.objects.filter(email=attrs.get("username")).first(
-    #     # ) or User.objects.filter(username=attrs.get("username")).first()
-    #     user_obj = (
-    #         User.objects.filter(email=email).first()
-    #         or User.objects.filter(username=email).first()
-    #     )
-    #     if user_obj:
-    #         credentials["username"] = user_obj.username
-    #     # request = self.context.get('request', None)
-    #     # print("===validate", visitor_ip_address(request))
-    #     # MySimpleJWTSerializer.myRequest = request
-    #     # MySimpleJWTSerializer.my_ip_address = visitor_ip_address(request)
-    #     return super().validate(credentials)
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MySimpleJWTSerializer
 
+### FACE ID
+### FACE ID
+### FACE ID
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User_face_id
+        fields = ['username', 'face_encoding']
 
-# ==========================================
+### FACE ID
+### FACE ID
+### FACE ID
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    face_image = serializers.ImageField(write_only=True)  # Hình ảnh được gửi lên dưới dạng tệp
 
-# https://stackoverflow.com/questions/54544978/customizing-jwt-response-from-django-rest-framework-simplejwt
-# class LoginGoogleSerializer(TokenObtainPairSerializer):
-#     my_ip_address = "0.0.0.0"
-#     myRequest = None
+    class Meta:
+        model = User
+        fields = ['username', 'password', 'face_image']
 
-#     @classmethod
-#     def get_token(cls, user):
-#         token = super().get_token(user)
-#         user_obj = User.objects.get(username=user)
-#         token['email'] = user_obj.email
-#         return token
-
-#     def validate(self, attrs):
-#         print("validate333: ", attrs)
-#         # credentials = {
-#         #     'username': '',
-#         #     'password': attrs.get("password")
-#         # }
-#         # user_obj = User.objects.filter(email=attrs.get("username")).first(
-#         # ) or User.objects.filter(username=attrs.get("username")).first()
-#         # if user_obj:
-#         #     credentials['username'] = user_obj.username
-
-#         # token_google = attrs.get("token")
-#         email = attrs.get("email")
-#         firstName = attrs.get("givenName")
-#         lastName = attrs.get("familyName")
-#         avatar = attrs.get("imageUrl")
-
-#         # create user if not exist
-#         try:
-#             user = User.objects.get(email=email)
-#         except User.DoesNotExist:
-#             user = User()
-#             user.username = email
-#             # provider random default password
-#             user.password = make_password(BaseUserManager().make_random_password())
-#             user.email = email
-#             user.save()
-
-#         request = self.context.get('request', None)
-#         print("===validate_LoginGoogleSerializer", visitor_ip_address(request))
-#         LoginGoogleSerializer.myRequest = request
-#         LoginGoogleSerializer.my_ip_address = visitor_ip_address(request)
-#         return user
-
-
-# class LoginGoogleView(TokenObtainPairView):
-#     serializer_class = LoginGoogleSerializer
+    def create(self, validated_data):
+        face_image = validated_data.pop('face_image')
+        user = User(**validated_data)
+        user.set_password(validated_data['password'])
+        user.save()
+        
+        # Xử lý hình ảnh khuôn mặt
+        image = face_recognition.load_image_file(face_image)
+        face_encodings = face_recognition.face_encodings(image)
+        
+        if not face_encodings:
+            raise serializers.ValidationError("No faces found in the image")
+        # user.face_encoding = face_encodings[0].tobytes()
+        User_face_id.objects.create(user=user, face_encoding=face_encodings[0].tobytes())
+        print(face_encodings[0].tobytes())
+        return user

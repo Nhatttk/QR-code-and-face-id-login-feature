@@ -38,6 +38,15 @@ import asyncio
 import websockets
 import json
 
+import face_recognition
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import User
+from .serializers import UserSerializer
+import numpy as np
+import base64
+
 def create_url_signature(url, secret_key):
     url_with_secret = url + secret_key
     sha256_hash = hashlib.sha256(url_with_secret.encode()).hexdigest()
@@ -517,3 +526,43 @@ def alow_login(request):
 
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
+        
+
+### FACE ID
+### FACE ID
+### FACE ID
+
+class FaceAuthView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+
+    def post(self, request, *args, **kwargs):
+        # Giả sử hình ảnh được gửi lên dưới dạng tệp
+        image_file = request.FILES.get('image')
+        if not image_file:
+            return Response({"error": "No image provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        image = face_recognition.load_image_file(image_file)
+        face_encodings = face_recognition.face_encodings(image)
+
+        if not face_encodings:
+            return Response({"error": "No faces found in the image"}, status=status.HTTP_400_BAD_REQUEST)
+
+        encoding = face_encodings[0]
+        users = User_face_id.objects.all()
+        for user in users:
+            user_encoding = np.frombuffer(user.face_encoding, dtype=np.float64) 
+            # so sánh dữ liệu đầu vào và dữ liệu trên server
+            match = face_recognition.compare_faces([user_encoding], encoding, tolerance=0.6) # tolerance : độ chính xác
+            if match[0]:
+                return Response({"message": "Authentication successful", "username": user.user.username})
+
+        return Response({"error": "Authentication failed"}, status=status.HTTP_401_UNAUTHORIZED)
+
+### FACE ID
+### FACE ID
+### FACE ID
+
+from rest_framework import generics  
+class UserRegistrationView(generics.CreateAPIView):
+    serializer_class = UserRegistrationSerializer
+    parser_classes = (MultiPartParser, FormParser)

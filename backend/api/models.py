@@ -90,3 +90,13 @@ class Setting(models.Model):
 
     def __str__(self):
         return "Lock Login: " + str(self.is_lock_login)
+
+### FACE ID
+### FACE ID
+### FACE ID
+class User_face_id(models.Model):
+    user = models.ForeignKey(User, related_name='user_w_face_id',
+                             on_delete=models.SET_NULL, blank=False, null=True)
+    face_encoding = models.BinaryField(blank=True, null=True)
+
+    

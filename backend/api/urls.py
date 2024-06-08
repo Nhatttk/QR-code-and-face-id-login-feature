@@ -36,4 +36,8 @@ urlpatterns = [
     # qr-login
     path('read_qrcode_and_send_username/', read_qrcode_and_send_username, name='read_qrcode_and_send_username'),
     path('alow_login/', alow_login, name='alow_login'),
+
+    # face_id
+    path('face-id/face-auth/', FaceAuthView.as_view(), name='face-auth'),
+    path('face-id/register/', UserRegistrationView.as_view(), name='register'),
 ]
